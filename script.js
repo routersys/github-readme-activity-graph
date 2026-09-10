@@ -118,13 +118,17 @@ const removePlaceholder = () => {
 // Generate chart link with user data
 
 const generateLink = () => {
-    let link = `[![Ashutosh's github activity graph](https://github-readme-activity-graph.vercel.app/graph?username=${
+    // 生成するスニペットは、このページを配信しているインスタンスを指す。
+    // 本家の URL を埋め込むと、自前でホストしている意味が無くなる。
+    let link = `[![${valueToCopy.username}'s github activity graph](${
+        window.location.origin
+    }/graph?username=${
         valueToCopy.username
     }&bg_color=${valueToCopy.bgColor.slice(1)}&color=${valueToCopy.color.slice(
         1
     )}&line=${valueToCopy.line.slice(1)}&point=${valueToCopy.point.slice(
         1
-    )}&area=true&hide_border=true)](https://github.com/ashutosh00710/github-readme-activity-graph)`;
+    )}&area=true&hide_border=true)](https://github.com/${valueToCopy.username})`;
     elements.textArea.value = link;
     elements.copyText.childNodes[3].style.backgroundColor = 'rgb(87, 132, 245)';
     return link;
@@ -186,7 +190,10 @@ const getGraph = (username) => {
     };
 
     axios({
-        url: `https://github-readme-activity-graph.vercel.app/data?username=${username}`,
+        // 同一オリジンの /data を使う。本家の Vercel を叩くと、
+        // 自前でホストしている意味が無いうえ、向こうが落ちていると
+        // このページも動かなくなる。
+        url: `/data?username=${username}`,
         method: 'GET',
     })
         .then((contributionData) => {
