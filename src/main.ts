@@ -20,11 +20,18 @@ app.use(cors());
 
 const handlers = new Handlers();
 
-app.get('/', (_req, res) => res.sendFile(path.join(rootDir, 'index.html')));
-app.get('/script.js', (_req, res) => res.sendFile(path.join(rootDir, 'script.js')));
-app.get('/styles.css', (_req, res) => res.sendFile(path.join(rootDir, 'styles.css')));
-// asset/ は配色プレビューの画像だけなので、まとめて配って差し支えない。
-app.use('/asset', express.static(path.join(rootDir, 'asset')));
+// オリジンが Cache-Control を返さないと、Cloudflare が .js/.css に既定で
+// max-age=4時間 を付ける。push で自動デプロイしても、利用者のブラウザは
+// その間古い script.js を使い続ける (実際にそれで「直したのに直らない」が起きた)。
+// HTML/JS/CSS は明示的に max-age=0 を返し、毎回サーバーに問い合わせさせる。
+// 変更が無ければ 304 が返るだけなので転送量はほぼ増えない。
+const revalidate = { maxAge: 0, etag: true, lastModified: true };
+
+app.get('/', (_req, res) => res.sendFile(path.join(rootDir, 'index.html'), revalidate));
+app.get('/script.js', (_req, res) => res.sendFile(path.join(rootDir, 'script.js'), revalidate));
+app.get('/styles.css', (_req, res) => res.sendFile(path.join(rootDir, 'styles.css'), revalidate));
+// asset/ は配色プレビューの画像だけで変わらないので、こちらは長めに持たせる。
+app.use('/asset', express.static(path.join(rootDir, 'asset'), { maxAge: '7d' }));
 
 //Get Graph
 app.get('/graph', handlers.getGraph);
